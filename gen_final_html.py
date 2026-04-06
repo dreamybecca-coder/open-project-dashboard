@@ -1,23 +1,32 @@
 #!/usr/bin/env python3
 import json
 
-with open('evaluated_final.json', 'r', encoding='utf-8') as f:
+with open('dashboard_data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 projects = data['projects']
 meta = data['meta']
 
 all_sorted = sorted(projects, key=lambda x: -x['totalScore'])
-quka_sorted = sorted([p for p in projects if '获客' in p['specialCategories']], key=lambda x: -x['totalScore'])
-chugai_sorted = sorted([p for p in projects if '出海' in p['specialCategories']], key=lambda x: -x['totalScore'])
-finance_sorted = sorted([p for p in projects if '金融投资' in p['specialCategories']], key=lambda x: -x['totalScore'])
+quka_sorted = sorted([p for p in projects if '获客' in str(p['specialCategories'])], key=lambda x: -x['totalScore'])
+chugai_sorted = sorted([p for p in projects if '出海' in str(p['specialCategories'])], key=lambda x: -x['totalScore'])
+finance_sorted = sorted([p for p in projects if '金融投资' in str(p['specialCategories'])], key=lambda x: -x['totalScore'])
 
 total_n = meta['total']
 sp_n = meta['grade_counts'].get('S+',0) + meta['grade_counts'].get('S',0)
 a_n = meta['grade_counts'].get('A',0)
-qk_n = meta['special_counts']['获客']
-cg_n = meta['special_counts']['出海']
-fi_n = meta['special_counts']['金融投资']
+
+# 从文件读取专项统计
+with open('strict_finance.json', 'r', encoding='utf-8') as f:
+    finance_names = json.load(f)
+with open('ultra_strict_quka.json', 'r', encoding='utf-8') as f:
+    quka_names = json.load(f)
+with open('ultra_strict_chuhai.json', 'r', encoding='utf-8') as f:
+    chuhai_names = json.load(f)
+
+qk_n = len(quka_names)
+cg_n = len(chuhai_names)
+fi_n = len(finance_names)
 
 css = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
