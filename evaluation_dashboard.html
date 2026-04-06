@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大航海项目筛选评估引擎</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+
+        .stat-card h3 {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-card .sub {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0 1.5rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            min-height: calc(100vh - 200px);
+        }
+
+        /* Filters Sidebar */
+        .sidebar {
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .filter-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-section h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-light);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-section h4 .count {
+            background: var(--primary);
+            color: white;
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+        }
+
+        .grade-filter {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .grade-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .grade-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .grade-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .grade-btn.s { background: #dc2626; color: white; border-color: #dc2626; }
+        .grade-btn.s.active { background: #dc2626; }
+        .grade-btn.a { background: #f59e0b; color: white; border-color: #f59e0b; }
+        .grade-btn.a.active { background: #f59e0b; }
+        .grade-btn.b { background: #10b981; color: white; border-color: #10b981; }
+        .grade-btn.b.active { background: #10b981; }
+        .grade-btn.c { background: #64748b; color: white; border-color: #64748b; }
+        .grade-btn.c.active { background: #64748b; }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-item input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--primary);
+        }
+
+        .range-filter {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .range-filter input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        .range-filter .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .region-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .region-btn {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .region-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .region-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Content Area */
+        .content {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .content-header h2 {
+            font-size: 1.25rem;
+        }
+
+        .sort-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Project List */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .project-card {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .project-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .project-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .project-title h3 {
+            font-size: 1.1rem;
+        }
+
+        .project-title .id {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .grade-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .grade-badge.s { background: #dc2626; }
+        .grade-badge.a { background: #f59e0b; }
+        .grade-badge.b { background: #10b981; }
+        .grade-badge.c { background: #64748b; }
+        .grade-badge.d { background: #94a3b8; }
+
+        .score-row {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+        }
+
+        .score-item .dim {
+            color: var(--text-light);
+        }
+
+        .score-item .val {
+            font-weight: 600;
+        }
+
+        .score-bar {
+            width: 50px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            background: #f1f5f9;
+            color: var(--text-light);
+        }
+
+        .tag.strategic { background: #dbeafe; color: #1d4ed8; }
+        .tag.innovation { background: #d1fae5; color: #047857; }
+        .tag.collab { background: #fef3c7; color: #b45309; }
+
+        .summary {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .score-detail {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-card {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .score-card .label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .score-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .score-card.d1 .value { color: #8b5cf6; }
+        .score-card.d2 .value { color: #3b82f6; }
+        .score-card.d3 .value { color: #10b981; }
+        .score-card.d4 .value { color: #f59e0b; }
+        .score-card.d5 .value { color: #ef4444; }
+        .score-card.d6 .value { color: #64748b; }
+
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section h4 {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .section p {
+            line-height: 1.7;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>大航海项目筛选评估引擎</h1>
+        <p>基于Rebecca六维评估体系 · AI自动评分 · 可视化分析</p>
+    </header>
+
+    <div class="stats-grid" id="statsGrid">
+        <!-- Stats will be populated by JS -->
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="ranking">排行榜</button>
+        <button class="tab" data-tab="charts">数据分析</button>
+        <button class="tab" data-tab="special">专题清单</button>
+    </div>
+
+    <div id="rankingView" class="tab-content">
+        <div class="main">
+            <aside class="sidebar">
+                <div class="filter-section">
+                    <h4>评级筛选 <span class="count" id="filterCount">0</span></h4>
+                    <div class="grade-filter">
+                        <button class="grade-btn active" data-grade="all">全部</button>
+                        <button class="grade-btn s" data-grade="S">S级</button>
+                        <button class="grade-btn a" data-grade="A">A级</button>
+                        <button class="grade-btn b" data-grade="B">B级</button>
+                        <button class="grade-btn c" data-grade="C">C级</button>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4>特别标记</h4>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="tagStrategic" checked>
+                            战略高相关
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="tagInnovation" checked>
+                            创新启发
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="tagCollab" checked>
+                            潜在合作
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4>大区筛选</h4>
+                    <div class="region-filter" id="regionFilter">
+                        <!-- Regions will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4>总分范围</h4>
+                    <div class="range-filter">
+                        <input type="range" id="scoreRange" min="1" max="5" step="0.1" value="1">
+                        <div class="range-labels">
+                            <span>1.0</span>
+                            <span id="scoreRangeValue">5.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4>维度筛选</h4>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="dimD4" checked>
+                            D4相关度 ≥ 4
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="dimD5">
+                            D5学习价值 ≥ 4
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="dimD6">
+                            D6协同潜力 ≥ 4
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="content">
+                <div class="content-header">
+                    <h2 id="listTitle">全部项目 (共 <span id="totalCount">0</span> 个)</h2>
+                    <select class="sort-select" id="sortSelect">
+                        <option value="totalScore">按总分排序</option>
+                        <option value="d1">按案主素质排序</option>
+                        <option value="d2">按商业价值排序</option>
+                        <option value="d3">按计划合理性排序</option>
+                        <option value="d4">按领域相关度排序</option>
+                        <option value="d5">按学习价值排序</option>
+                        <option value="d6">按协同潜力排序</option>
+                        <option value="credits">按学分排序</option>
+                    </select>
+                </div>
+
+                <div class="project-list" id="projectList">
+                    <!-- Projects will be populated by JS -->
+                </div>
+
+                <div class="pagination" id="pagination">
+                    <!-- Pagination will be populated by JS -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="chartsView" class="tab-content" style="display: none;">
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>评级分布</h3>
+                <div id="gradeChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>各维度平均分分布</h3>
+                <div id="dimChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>大区项目数量</h3>
+                <div id="regionChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>总分分布</h3>
+                <div id="scoreDistChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="specialView" class="tab-content" style="display: none;">
+        <div class="content" style="max-width: 1200px; margin: 0 auto;">
+            <div class="filter-section" style="margin-bottom: 2rem;">
+                <h4>专题类型</h4>
+                <div class="grade-filter">
+                    <button class="grade-btn active" data-special="all">全部</button>
+                    <button class="grade-btn s" data-special="战略高相关">战略高相关</button>
+                    <button class="grade-btn a" data-special="创新启发">创新启发</button>
+                    <button class="grade-btn b" data-special="潜在合作">潜在合作</button>
+                    <button class="grade-btn c" data-special="高分但有硬伤">高分但有硬伤</button>
+                </div>
+            </div>
+
+            <div class="project-list" id="specialList">
+                <!-- Special projects will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTitle">项目详情</h2>
+                    <p id="modalMeta" style="color: var(--text-light); font-size: 0.9rem; margin-top: 0.25rem;"></p>
+                </div>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let allProjects = [];
+        let filteredProjects = [];
+        let currentPage = 1;
+        const pageSize = 20;
+        let currentSpecialType = 'all';
+
+        // Initialize
+        async function init() {
+            try {
+                const response = await fetch('evaluated_projects.json');
+                const data = await response.json();
+                allProjects = data.projects;
+
+                renderStats(data.stats);
+                renderRegionFilter();
+                applyFilters();
+
+                setupEventListeners();
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                document.getElementById('projectList').innerHTML = `
+                    <div class="empty-state">
+                        <p>加载数据失败，请确保 evaluated_projects.json 文件存在</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderStats(stats) {
+            const gradeHtml = Object.entries(stats.gradeDistribution).map(([grade, count]) => {
+                const colors = { S: '#dc2626', A: '#f59e0b', B: '#10b981', C: '#64748b', D: '#94a3b8' };
+                return `<span style="color: ${colors[grade]}; font-weight: 600;">${grade}: ${count}</span>`;
+            }).join(' &nbsp;|&nbsp; ');
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <h3>总项目数</h3>
+                    <div class="value">${stats.total}</div>
+                    <div class="sub">全部评估完成</div>
+                </div>
+                <div class="stat-card">
+                    <h3>平均总分</h3>
+                    <div class="value">${stats.averageScore}</div>
+                    <div class="sub">基于六维评估体系</div>
+                </div>
+                <div class="stat-card">
+                    <h3>S+A级项目</h3>
+                    <div class="value">${stats.gradeDistribution.S + stats.gradeDistribution.A}</div>
+                    <div class="sub">推荐优先关注</div>
+                </div>
+                <div class="stat-card">
+                    <h3>战略高相关</h3>
+                    <div class="value">${stats.tagDistribution['战略高相关']}</div>
+                    <div class="sub">D4 ≥ 4</div>
+                </div>
+                <div class="stat-card">
+                    <h3>评级分布</h3>
+                    <div class="sub">${gradeHtml}</div>
+                </div>
+            `;
+        }
+
+        function renderRegionFilter() {
+            const regions = [...new Set(allProjects.map(p => p.region).filter(Boolean))];
+            const regionFilter = document.getElementById('regionFilter');
+            regionFilter.innerHTML = regions.map(r => `
+                <button class="region-btn" data-region="${r}">${r}</button>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const gradeFilter = document.querySelector('.grade-filter .grade-btn.active')?.dataset.grade || 'all';
+            const regions = [...document.querySelectorAll('.region-filter .region-btn.active')].map(b => b.dataset.region);
+            const minScore = parseFloat(document.getElementById('scoreRange').value);
+            const tagStrategic = document.getElementById('tagStrategic').checked;
+            const tagInnovation = document.getElementById('tagInnovation').checked;
+            const tagCollab = document.getElementById('tagCollab').checked;
+            const dimD4 = document.getElementById('dimD4').checked;
+            const dimD5 = document.getElementById('dimD5').checked;
+            const dimD6 = document.getElementById('dimD6').checked;
+
+            filteredProjects = allProjects.filter(p => {
+                // Grade filter
+                if (gradeFilter !== 'all' && p.grade !== gradeFilter) return false;
+
+                // Region filter
+                if (regions.length > 0 && !regions.some(r => p.region.includes(r))) return false;
+
+                // Score filter
+                if (p.totalScore < minScore) return false;
+
+                // Tag filters
+                if (tagStrategic && !p.tags.includes('战略高相关')) return false;
+                if (tagInnovation && !p.tags.includes('创新启发')) return false;
+                if (tagCollab && !p.tags.includes('潜在合作')) return false;
+
+                // Dimension filters
+                if (dimD4 && p.scores.d4 < 4) return false;
+                if (dimD5 && p.scores.d5 < 4) return false;
+                if (dimD6 && p.scores.d6 < 4) return false;
+
+                return true;
+            });
+
+            // Apply sorting
+            const sortBy = document.getElementById('sortSelect').value;
+            filteredProjects.sort((a, b) => {
+                if (sortBy === 'totalScore') return b.totalScore - a.totalScore;
+                if (sortBy === 'credits') return b.credits - a.credits;
+                return b.scores[sortBy] - a.scores[sortBy];
+            });
+
+            currentPage = 1;
+            renderProjectList();
+            document.getElementById('filterCount').textContent = filteredProjects.length;
+            document.getElementById('totalCount').textContent = filteredProjects.length;
+        }
+
+        function renderProjectList() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageProjects = filteredProjects.slice(start, end);
+
+            if (pageProjects.length === 0) {
+                document.getElementById('projectList').innerHTML = `
+                    <div class="empty-state">
+                        <p>没有符合条件的项目</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('projectList').innerHTML = pageProjects.map(p => `
+                <div class="project-card" onclick="showProjectDetail(${p.rank - 1})">
+                    <div class="project-header">
+                        <div class="project-title">
+                            <h3>${p.name}</h3>
+                            <span class="id">#${p.id}</span>
+                        </div>
+                        <span class="grade-badge ${p.grade.toLowerCase()}">${p.grade}级</span>
+                    </div>
+                    <div class="score-row">
+                        <div class="score-item">
+                            <span class="dim">总分</span>
+                            <span class="val" style="color: var(--primary);">${p.totalScore}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D1素质</span>
+                            <span class="val">${p.scores.d1}</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width: ${p.scores.d1 * 20}%; background: #8b5cf6;"></div></div>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D2价值</span>
+                            <span class="val">${p.scores.d2}</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width: ${p.scores.d2 * 20}%; background: #3b82f6;"></div></div>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D4相关</span>
+                            <span class="val">${p.scores.d4}</span>
+                            <div class="score-bar"><div class="score-bar-fill" style="width: ${p.scores.d4 * 20}%; background: #f59e0b;"></div></div>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        ${p.tags.map(t => `<span class="tag ${t === '战略高相关' ? 'strategic' : t === '创新启发' ? 'innovation' : t === '潜在合作' ? 'collab' : ''}">${t}</span>`).join('')}
+                        <span class="tag">${p.region || '未知地区'}</span>
+                    </div>
+                    <div class="summary">${p.summary}</div>
+                    <div class="meta">
+                        <span>学分: ${p.credits}</span>
+                        <span>押券: ${p.tickets}</span>
+                        <span>排名: #${p.rank}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredProjects.length / pageSize);
+            if (totalPages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let pages = [];
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
+                }
+            }
+
+            document.getElementById('pagination').innerHTML = `
+                <button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+                ${pages.map(p => p === '...' ? '<span class="page-btn" style="cursor: default;">...</span>' : `
+                    <button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>
+                `).join('')}
+                <button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+            `;
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredProjects.length / pageSize);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderProjectList();
+            document.querySelector('.content').scrollTop = 0;
+        }
+
+        function showProjectDetail(index) {
+            const p = filteredProjects[index];
+            document.getElementById('modalTitle').textContent = `${p.name} - ${p.grade}级项目`;
+            document.getElementById('modalMeta').textContent = `#${p.id} | ${p.region || '未知地区'} | 排名 #${p.rank}`;
+
+            document.getElementById('modalBody').innerHTML = `
+                <div class="score-detail">
+                    <div class="score-card d1">
+                        <div class="label">D1 案主素质 (25%)</div>
+                        <div class="value">${p.scores.d1}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d1}</div>
+                    </div>
+                    <div class="score-card d2">
+                        <div class="label">D2 商业价值 (25%)</div>
+                        <div class="value">${p.scores.d2}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d2}</div>
+                    </div>
+                    <div class="score-card d3">
+                        <div class="label">D3 计划合理性 (15%)</div>
+                        <div class="value">${p.scores.d3}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d3}</div>
+                    </div>
+                    <div class="score-card d4">
+                        <div class="label">D4 领域相关度 (20%)</div>
+                        <div class="value">${p.scores.d4}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d4}</div>
+                    </div>
+                    <div class="score-card d5">
+                        <div class="label">D5 学习借鉴价值 (10%)</div>
+                        <div class="value">${p.scores.d5}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d5}</div>
+                    </div>
+                    <div class="score-card d6">
+                        <div class="label">D6 网络协同潜力 (5%)</div>
+                        <div class="value">${p.scores.d6}/5</div>
+                        <div style="font-size: 0.75rem; color: var(--text-light);">${p.reasons.d6}</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: white; border-radius: 0.5rem;">
+                    <div style="font-size: 0.85rem; opacity: 0.9;">综合评分</div>
+                    <div style="font-size: 2.5rem; font-weight: 700;">${p.totalScore}</div>
+                </div>
+
+                <div class="section">
+                    <h4>推荐理由</h4>
+                    <p>${p.summary}</p>
+                </div>
+
+                ${p.tags.length > 0 ? `
+                <div class="section">
+                    <h4>特别标记</h4>
+                    <div class="tags">
+                        ${p.tags.map(t => `<span class="tag ${t === '战略高相关' ? 'strategic' : t === '创新启发' ? 'innovation' : t === '潜在合作' ? 'collab' : ''}">${t}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                ${p.intro ? `
+                <div class="section">
+                    <h4>案主个人介绍</h4>
+                    <p>${p.intro}</p>
+                </div>
+                ` : ''}
+
+                ${p.projectIntro ? `
+                <div class="section">
+                    <h4>项目课题介绍</h4>
+                    <p>${p.projectIntro}</p>
+                </div>
+                ` : ''}
+
+                ${p.plan ? `
+                <div class="section">
+                    <h4>航海目标和计划</h4>
+                    <p>${p.plan}</p>
+                </div>
+                ` : ''}
+
+                ${p.directions && p.directions.length > 0 && p.directions[0] ? `
+                <div class="section">
+                    <h4>项目突破方向</h4>
+                    <div class="tags">
+                        ${p.directions.filter(d => d).map(d => `<span class="tag">${d}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="section">
+                    <h4>基本信息</h4>
+                    <p>报名形式: ${p.registerType || '未知'}</p>
+                    <p>学分: ${p.credits} | 船票押券: ${p.tickets}</p>
+                </div>
+            `;
+
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function renderCharts() {
+            // Grade Distribution
+            const gradeCounts = { S: 0, A: 0, B: 0, C: 0, D: 0 };
+            allProjects.forEach(p => gradeCounts[p.grade]++);
+
+            Plotly.newPlot('gradeChart', [{
+                values: Object.values(gradeCounts),
+                labels: ['S级', 'A级', 'B级', 'C级', 'D级'],
+                type: 'pie',
+                marker: {
+                    colors: ['#dc2626', '#f59e0b', '#10b981', '#64748b', '#94a3b8']
+                }
+            }], {responsive: true, displayModeBar: false});
+
+            // Dimension Average Scores
+            const dimAvgs = {
+                'D1素质': 0, 'D2价值': 0, 'D3计划': 0,
+                'D4相关': 0, 'D5学习': 0, 'D6协同': 0
+            };
+            allProjects.forEach(p => {
+                dimAvgs['D1素质'] += p.scores.d1;
+                dimAvgs['D2价值'] += p.scores.d2;
+                dimAvgs['D3计划'] += p.scores.d3;
+                dimAvgs['D4相关'] += p.scores.d4;
+                dimAvgs['D5学习'] += p.scores.d5;
+                dimAvgs['D6协同'] += p.scores.d6;
+            });
+            const count = allProjects.length;
+            Object.keys(dimAvgs).forEach(k => dimAvgs[k] = (dimAvgs[k] / count).toFixed(2));
+
+            Plotly.newPlot('dimChart', [{
+                x: Object.keys(dimAvgs),
+                y: Object.values(dimAvgs),
+                type: 'bar',
+                marker: {
+                    color: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#64748b']
+                }
+            }], {
+                responsive: true,
+                displayModeBar: false,
+                yaxis: { range: [0, 5] }
+            });
+
+            // Region Distribution
+            const regionCounts = {};
+            allProjects.forEach(p => {
+                if (p.region) {
+                    regionCounts[p.region] = (regionCounts[p.region] || 0) + 1;
+                }
+            });
+            const sortedRegions = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
+
+            Plotly.newPlot('regionChart', [{
+                x: sortedRegions.map(r => r[0]),
+                y: sortedRegions.map(r => r[1]),
+                type: 'bar',
+                marker: { color: '#2563eb' }
+            }], {
+                responsive: true,
+                displayModeBar: false,
+                xaxis: { tickangle: -45 }
+            });
+
+            // Score Distribution
+            const scoreBuckets = {};
+            for (let i = 1; i <= 5; i += 0.2) {
+                scoreBuckets[i.toFixed(1)] = 0;
+            }
+            allProjects.forEach(p => {
+                const bucket = Object.keys(scoreBuckets).find(b => parseFloat(b) <= p.totalScore && parseFloat(b) + 0.2 > p.totalScore);
+                if (bucket) scoreBuckets[bucket]++;
+            });
+
+            Plotly.newPlot('scoreDistChart', [{
+                x: Object.keys(scoreBuckets),
+                y: Object.values(scoreBuckets),
+                type: 'scatter',
+                fill: 'tozeroy',
+                line: { color: '#2563eb' },
+                fillcolor: 'rgba(37, 99, 235, 0.2)'
+            }], {
+                responsive: true,
+                displayModeBar: false,
+                xaxis: { title: '总分' },
+                yaxis: { title: '项目数量' }
+            });
+        }
+
+        function renderSpecialList(type = 'all') {
+            currentSpecialType = type;
+
+            let specialProjects = allProjects;
+            if (type !== 'all') {
+                specialProjects = allProjects.filter(p => p.tags.includes(type));
+            }
+
+            // Sort by the relevant dimension
+            if (type === '战略高相关') {
+                specialProjects.sort((a, b) => b.scores.d4 - a.scores.d4);
+            } else if (type === '创新启发') {
+                specialProjects.sort((a, b) => b.scores.d5 - a.scores.d5);
+            } else if (type === '潜在合作') {
+                specialProjects.sort((a, b) => b.scores.d6 - a.scores.d6);
+            } else {
+                specialProjects.sort((a, b) => b.totalScore - a.totalScore);
+            }
+
+            document.getElementById('specialList').innerHTML = specialProjects.map(p => `
+                <div class="project-card" onclick="showSpecialDetail('${type}', ${p.rank - 1})">
+                    <div class="project-header">
+                        <div class="project-title">
+                            <h3>${p.name}</h3>
+                            <span class="id">#${p.id}</span>
+                        </div>
+                        <div>
+                            <span class="grade-badge ${p.grade.toLowerCase()}">${p.grade}级</span>
+                            ${type === '战略高相关' ? `<span style="margin-left: 0.5rem; color: var(--primary); font-weight: 600;">D4: ${p.scores.d4}</span>` : ''}
+                            ${type === '创新启发' ? `<span style="margin-left: 0.5rem; color: var(--primary); font-weight: 600;">D5: ${p.scores.d5}</span>` : ''}
+                            ${type === '潜在合作' ? `<span style="margin-left: 0.5rem; color: var(--primary); font-weight: 600;">D6: ${p.scores.d6}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="score-row">
+                        <div class="score-item">
+                            <span class="dim">总分</span>
+                            <span class="val" style="color: var(--primary);">${p.totalScore}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D1素质</span>
+                            <span class="val">${p.scores.d1}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D2价值</span>
+                            <span class="val">${p.scores.d2}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D4相关</span>
+                            <span class="val">${p.scores.d4}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D5学习</span>
+                            <span class="val">${p.scores.d5}</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="dim">D6协同</span>
+                            <span class="val">${p.scores.d6}</span>
+                        </div>
+                    </div>
+                    <div class="tags">
+                        ${p.tags.map(t => `<span class="tag ${t === '战略高相关' ? 'strategic' : t === '创新启发' ? 'innovation' : t === '潜在合作' ? 'collab' : ''}">${t}</span>`).join('')}
+                        <span class="tag">${p.region || '未知地区'}</span>
+                    </div>
+                    <div class="summary">${p.summary}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('listTitle').innerHTML = `${type === 'all' ? '全部专题项目' : type} (共 ${specialProjects.length} 个)`;
+        }
+
+        function showSpecialDetail(type, rank) {
+            showProjectDetail(rank);
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const tabName = tab.dataset.tab;
+                    document.getElementById('rankingView').style.display = tabName === 'ranking' ? 'block' : 'none';
+                    document.getElementById('chartsView').style.display = tabName === 'charts' ? 'block' : 'none';
+                    document.getElementById('specialView').style.display = tabName === 'special' ? 'block' : 'none';
+
+                    if (tabName === 'charts') {
+                        renderCharts();
+                    } else if (tabName === 'special') {
+                        renderSpecialList(currentSpecialType);
+                    }
+                });
+            });
+
+            // Grade filter
+            document.querySelectorAll('.grade-filter .grade-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.grade-filter .grade-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyFilters();
+                });
+            });
+
+            // Region filter
+            document.getElementById('regionFilter').addEventListener('click', (e) => {
+                if (e.target.classList.contains('region-btn')) {
+                    e.target.classList.toggle('active');
+                    applyFilters();
+                }
+            });
+
+            // Score range
+            document.getElementById('scoreRange').addEventListener('input', (e) => {
+                document.getElementById('scoreRangeValue').textContent = e.target.value;
+                applyFilters();
+            });
+
+            // Checkboxes
+            document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', applyFilters);
+            });
+
+            // Sort
+            document.getElementById('sortSelect').addEventListener('change', applyFilters);
+
+            // Modal
+            document.getElementById('modalClose').addEventListener('click', () => {
+                document.getElementById('modalOverlay').classList.remove('active');
+            });
+
+            document.getElementById('modalOverlay').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('modalOverlay')) {
+                    document.getElementById('modalOverlay').classList.remove('active');
+                }
+            });
+
+            // Special filters
+            document.querySelectorAll('#specialView .grade-filter .grade-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#specialView .grade-filter .grade-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderSpecialList(btn.dataset.special);
+                });
+            });
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

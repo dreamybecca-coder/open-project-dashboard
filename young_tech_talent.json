@@ -1,0 +1,22 @@
+[
+  {
+    "excel_row": 367,
+    "name": "刘剑飞",
+    "score": 68,
+    "grade": "S",
+    "has_tech": true,
+    "has_young": true,
+    "has_overseas": true,
+    "age_info": "18岁"
+  },
+  {
+    "excel_row": 1020,
+    "name": "陈露文",
+    "score": 41,
+    "grade": "D",
+    "has_tech": true,
+    "has_young": true,
+    "has_overseas": true,
+    "age_info": "27岁"
+  }
+]

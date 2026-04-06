@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大航海项目筛选评估引擎 - Rebecca定制版</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --top: #dc2626;
+            --t1: #f59e0b;
+            --t2: #10b981;
+            --t3: #64748b;
+            --t4: #94a3b8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #dc2626 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+        }
+
+        .header h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .header p { opacity: 0.9; font-size: 0.9rem; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+        .stat-card .value.top { color: var(--top); }
+        .stat-card .value.t1 { color: var(--t1); }
+        .stat-card .value.t2 { color: var(--t2); }
+
+        .main {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 180px);
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 180px);
+        }
+
+        .filter-section { margin-bottom: 1.25rem; }
+        .filter-section h4 { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 0.5rem; }
+
+        .grade-filter { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+        .grade-btn {
+            padding: 0.35rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .grade-btn:hover { border-color: var(--primary); }
+        .grade-btn.active { color: white; border-color: currentColor; }
+        .grade-btn.top { color: var(--top); }
+        .grade-btn.top.active { background: var(--top); }
+        .grade-btn.t1 { color: var(--t1); }
+        .grade-btn.t1.active { background: var(--t1); }
+        .grade-btn.t2 { color: var(--t2); }
+        .grade-btn.t2.active { background: var(--t2); }
+        .grade-btn.t3 { color: var(--t3); }
+        .grade-btn.t3.active { background: var(--t3); }
+        .grade-btn.t4 { color: var(--t4); }
+        .grade-btn.t4.active { background: var(--t4); }
+        .grade-btn.t5 { color: #bdc3c7; }
+        .grade-btn.t5.active { background: #bdc3c7; }
+
+        .filter-count {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            padding: 0.5rem;
+            background: #f1f5f9;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .content { padding: 1rem; overflow-x: auto; }
+
+        .project-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+        .project-card {
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .project-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .project-card.top { border-left-color: var(--top); background: #fef2f2; }
+        .project-card.t1 { border-left-color: var(--t1); background: #fffbeb; }
+        .project-card.t2 { border-left-color: var(--t2); background: #ecfdf5; }
+        .project-card.t3 { border-left-color: var(--t3); }
+        .project-card.t4 { border-left-color: var(--t4); }
+        .project-card.t5 { border-left-color: #bdc3c7; opacity: 0.7; }
+
+        .project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+        .project-name { font-weight: 600; font-size: 0.95rem; }
+        .project-grade {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.2rem;
+            color: white;
+        }
+        .project-grade.top { background: var(--top); }
+        .project-grade.t1 { background: var(--t1); }
+        .project-grade.t2 { background: var(--t2); }
+        .project-grade.t3 { background: var(--t3); }
+        .project-grade.t4 { background: var(--t4); }
+        .project-grade.t5 { background: #bdc3c7; }
+
+        .project-meta { display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-light); }
+        .project-score { font-weight: 600; color: var(--text); }
+        .project-tags { display: flex; gap: 0.25rem; margin-top: 0.25rem; }
+        .tag { font-size: 0.65rem; padding: 0.1rem 0.3rem; border-radius: 0.2rem; background: #e2e8f0; }
+
+        .pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+        .page-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .modal-title { font-size: 1.25rem; font-weight: 700; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+        .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 1rem 0; }
+        .score-item { background: #f8fafc; padding: 0.75rem; border-radius: 0.5rem; text-align: center; }
+        .score-item h4 { font-size: 0.7rem; color: var(--text-light); margin-bottom: 0.25rem; }
+        .score-item .value { font-size: 1.25rem; font-weight: 700; }
+        .score-item.highlight { background: #dbeafe; border: 2px solid var(--primary); }
+        .score-item.highlight .value { color: var(--primary); }
+
+        .detail-section { margin-top: 1rem; }
+        .detail-section h4 { font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+        .detail-section p { font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+
+        .tabs { display: flex; gap: 0.5rem; padding: 1rem 2rem; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .tab { padding: 0.75rem 1.25rem; border: none; background: none; cursor: pointer; font-size: 0.9rem; color: var(--text-light); border-bottom: 2px solid transparent; }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-light); }
+
+        .highlight-section {
+            background: linear-gradient(135deg, #fef2f2 0%, #fff 100%);
+            border: 2px solid var(--top);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .highlight-section h3 { color: var(--top); margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .highlight-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .highlight-item {
+            background: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>大航海项目筛选评估引擎</h1>
+        <p>Rebecca定制版 · 六维评估体系 · 1469个项目</p>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <h3>TOP必听</h3>
+            <div class="value top" id="topCount">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>T1强烈推荐</h3>
+            <div class="value t1" id="t1Count">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>T2优先关注</h3>
+            <div class="value t2" id="t2Count">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>总项目数</h3>
+            <div class="value" id="totalCount">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>平均分</h3>
+            <div class="value" id="avgScore">-</div>
+        </div>
+    </div>
+
+    <div class="highlight-section" id="highlightSection" style="margin: 0 2rem 1rem;">
+        <h3>TOP 10 核心关注名单 (综合评分最高)</h3>
+        <div class="highlight-list" id="highlightList"></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="list">排行榜</button>
+        <button class="tab" data-tab="analysis">数据分析</button>
+    </div>
+
+    <div class="main">
+        <div class="sidebar">
+            <div class="filter-count">
+                当前筛选: <span id="filterCount">1469</span> 个项目
+            </div>
+
+            <div class="filter-section">
+                <h4>评级筛选</h4>
+                <div class="grade-filter">
+                    <button class="grade-btn active" data-grade="all">全部</button>
+                    <button class="grade-btn top" data-grade="TOP">TOP (<span id="topBtnCount">45</span>)</button>
+                    <button class="grade-btn t1" data-grade="T1">T1 (<span id="t1BtnCount">60</span>)</button>
+                    <button class="grade-btn t2" data-grade="T2">T2 (<span id="t2BtnCount">119</span>)</button>
+                    <button class="grade-btn t3" data-grade="T3">T3 (<span id="t3BtnCount">135</span>)</button>
+                    <button class="grade-btn t4" data-grade="T4">T4 (<span id="t4BtnCount">154</span>)</button>
+                    <button class="grade-btn t5" data-grade="T5">跳过</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h4>总分范围</h4>
+                <input type="range" id="scoreRange" min="0" max="5" step="0.1" value="0" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-light);">
+                    <span>0</span>
+                    <span id="scoreValue">≥ 0</span>
+                    <span>5</span>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h4>特别标签</h4>
+                <label style="display: block; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <input type="checkbox" id="tagStrategic"> 战略高相关
+                </label>
+                <label style="display: block; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <input type="checkbox" id="tagInnovation"> 创新启发
+                </label>
+                <label style="display: block; font-size: 0.85rem;">
+                    <input type="checkbox" id="tagCollab"> 潜在合作
+                </label>
+            </div>
+
+            <div class="filter-section">
+                <h4>排序方式</h4>
+                <select id="sortSelect" style="width: 100%; padding: 0.5rem; border-radius: 0.25rem; border: 1px solid var(--border);">
+                    <option value="adjustedScore">综合评分(推荐)</option>
+                    <option value="totalScore">原始总分</option>
+                    <option value="d1">D1案主素质</option>
+                    <option value="d2">D2商业价值</option>
+                    <option value="d4">D4领域相关度</option>
+                    <option value="d5">D5学习价值</option>
+                    <option value="d6">D6协同潜力</option>
+                    <option value="credits">贡献积分</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="content" id="contentArea">
+            <div class="project-list" id="projectList"></div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <script>
+        let allProjects = [];
+        let filteredProjects = [];
+        let currentPage = 1;
+        const pageSize = 30;
+
+        function init() {
+            allProjects = EMBEDDED_DATA.projects;
+            renderStats();
+            renderHighlight();
+            applyFilters();
+            setupEventListeners();
+        }
+
+        function renderStats() {
+            const stats = EMBEDDED_DATA.stats;
+            document.getElementById('topCount').textContent = stats.topCount;
+            document.getElementById('t1Count').textContent = stats.t1Count;
+            document.getElementById('t2Count').textContent = stats.t2Count;
+            document.getElementById('totalCount').textContent = stats.total;
+            document.getElementById('avgScore').textContent = stats.averageScore;
+            document.getElementById('topBtnCount').textContent = stats.topCount;
+            document.getElementById('t1BtnCount').textContent = stats.t1Count;
+            document.getElementById('t2BtnCount').textContent = stats.t2Count;
+            document.getElementById('t3BtnCount').textContent = stats.newGradeDistribution.T3 || 0;
+            document.getElementById('t4BtnCount').textContent = stats.newGradeDistribution.T4 || 0;
+        }
+
+        function renderHighlight() {
+            const top10 = allProjects.filter(p => p.newGrade === 'TOP').slice(0, 10);
+            document.getElementById('highlightList').innerHTML = top10.map((p, i) => 
+                `<div class="highlight-item">
+                    <strong>${i+1}. ${p.name}</strong>
+                    <span style="color: #dc2626; margin-left: 0.5rem;">${p.adjustedScore}</span>
+                    <span style="color: #64748b; margin-left: 0.25rem;">${p.region}</span>
+                </div>`
+            ).join('');
+        }
+
+        function applyFilters() {
+            const gradeFilter = document.querySelector('.grade-filter .grade-btn.active')?.dataset.grade || 'all';
+            const minScore = parseFloat(document.getElementById('scoreRange').value);
+            const tagStrategic = document.getElementById('tagStrategic').checked;
+            const tagInnovation = document.getElementById('tagInnovation').checked;
+            const tagCollab = document.getElementById('tagCollab').checked;
+
+            filteredProjects = allProjects.filter(p => {
+                if (gradeFilter !== 'all' && p.newGrade !== gradeFilter) return false;
+                if (p.adjustedScore < minScore) return false;
+                if (tagStrategic && !p.tags.includes('战略高相关')) return false;
+                if (tagInnovation && !p.tags.includes('创新启发')) return false;
+                if (tagCollab && !p.tags.includes('潜在合作')) return false;
+                return true;
+            });
+
+            const sortBy = document.getElementById('sortSelect').value;
+            filteredProjects.sort((a, b) => b[adjustedScore] - a[adjustedScore]);
+            if (sortBy === 'adjustedScore') {
+                filteredProjects.sort((a, b) => b.adjustedScore - a.adjustedScore);
+            } else if (sortBy === 'totalScore') {
+                filteredProjects.sort((a, b) => b.totalScore - a.totalScore);
+            } else if (sortBy === 'credits') {
+                filteredProjects.sort((a, b) => b.credits - a.credits);
+            } else {
+                filteredProjects.sort((a, b) => b.scores[sortBy] - a.scores[sortBy]);
+            }
+
+            currentPage = 1;
+            document.getElementById('filterCount').textContent = filteredProjects.length;
+            renderProjectList();
+        }
+
+        function renderProjectList() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageProjects = filteredProjects.slice(start, end);
+
+            const gradeColors = { TOP: 'top', T1: 't1', T2: 't2', T3: 't3', T4: 't4', T5: 't5' };
+            const gradeLabels = { TOP: 'TOP', T1: 'T1', T2: 'T2', T3: 'T3', T4: 'T4', T5: '跳过' };
+
+            if (pageProjects.length === 0) {
+                document.getElementById('projectList').innerHTML = '<div class="empty-state">没有符合条件的项目</div>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('projectList').innerHTML = pageProjects.map(p => {
+                const gc = gradeColors[p.newGrade] || 't5';
+                const gl = gradeLabels[p.newGrade] || '跳过';
+                const tags = p.tags.slice(0, 2).map(t => `<span class="tag">${t}</span>`).join('');
+                return `
+                    <div class="project-card ${gc}" onclick="showDetail(${p.newRank})">
+                        <div class="project-header">
+                            <span class="project-name">${p.newRank}. ${p.name}</span>
+                            <span class="project-grade ${gc}">${gl}</span>
+                        </div>
+                        <div class="project-meta">
+                            <span class="project-score">综合:${p.adjustedScore} 总分:${p.totalScore}</span>
+                            <span>D4:${p.scores.d4}</span>
+                            <span>${p.region}</span>
+                        </div>
+                        <div class="project-tags">${tags}</div>
+                    </div>
+                `;
+            }).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredProjects.length / pageSize);
+            if (totalPages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 0.4rem;">...</span>`;
+                }
+            }
+            document.getElementById('pagination').innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProjectList();
+            document.getElementById('contentArea').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showDetail(rank) {
+            const p = allProjects.find(x => x.newRank === rank);
+            if (!p) return;
+
+            const gradeColors = { TOP: '#dc2626', T1: '#f59e0b', T2: '#10b981', T3: '#64748b', T4: '#94a3b8', T5: '#bdc3c7' };
+            
+            document.getElementById('modalContent').innerHTML = `
+                <div class="modal-header">
+                    <div class="modal-title">${p.newRank}. ${p.name} <span style="font-size: 0.9rem; color: ${gradeColors[p.newGrade]};">[${p.newGrade} ${p.gradeReason}]</span></div>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="project-meta" style="margin-bottom: 1rem;">
+                    <span>${p.region}</span>
+                    <span>${p.registerType}</span>
+                    <span>贡献积分: ${p.credits}</span>
+                    <span>D方向: ${p.directions.join(', ')}</span>
+                </div>
+                <div class="score-grid">
+                    <div class="score-item ${p.scores.d1 >= 4.5 ? 'highlight' : ''}">
+                        <h4>D1 案主素质</h4>
+                        <div class="value">${p.scores.d1}</div>
+                    </div>
+                    <div class="score-item">
+                        <h4>D2 商业价值</h4>
+                        <div class="value">${p.scores.d2}</div>
+                    </div>
+                    <div class="score-item">
+                        <h4>D3 计划合理性</h4>
+                        <div class="value">${p.scores.d3}</div>
+                    </div>
+                    <div class="score-item ${p.scores.d4 >= 4.5 ? 'highlight' : ''}">
+                        <h4>D4 领域相关度</h4>
+                        <div class="value">${p.scores.d4}</div>
+                    </div>
+                    <div class="score-item">
+                        <h4>D5 学习借鉴</h4>
+                        <div class="value">${p.scores.d5}</div>
+                    </div>
+                    <div class="score-item">
+                        <h4>D6 协同潜力</h4>
+                        <div class="value">${p.scores.d6}</div>
+                    </div>
+                </div>
+                <div style="text-align: center; background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <span style="font-size: 0.8rem; color: var(--text-light);">综合评分</span>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">${p.adjustedScore}</div>
+                    <span style="font-size: 0.8rem;">原始总分: ${p.totalScore}</span>
+                </div>
+                <div class="detail-section">
+                    <h4>项目摘要</h4>
+                    <p>${p.summary}</p>
+                </div>
+                <div class="detail-section">
+                    <h4>个人介绍</h4>
+                    <p>${(p.intro || '').substring(0, 500)}...</p>
+                </div>
+                <div class="detail-section">
+                    <h4>项目介绍</h4>
+                    <p>${(p.projectIntro || '').substring(0, 500)}...</p>
+                </div>
+            `;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.grade-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyFilters();
+                });
+            });
+
+            document.getElementById('scoreRange').addEventListener('input', (e) => {
+                document.getElementById('scoreValue').textContent = '≥ ' + e.target.value;
+                applyFilters();
+            });
+
+            ['tagStrategic', 'tagInnovation', 'tagCollab'].forEach(id => {
+                document.getElementById(id).addEventListener('change', applyFilters);
+            });
+
+            document.getElementById('sortSelect').addEventListener('change', applyFilters);
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    if (tab.dataset.tab === 'analysis') {
+                        showAnalysis();
+                    } else {
+                        document.getElementById('contentArea').style.display = 'block';
+                        document.getElementById('analysisArea').style.display = 'none';
+                    }
+                });
+            });
+
+            document.getElementById('modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('modal')) closeModal();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+        }
+
+        function showAnalysis() {
+            document.getElementById('contentArea').style.display = 'none';
+            let analysisHtml = '<div id="analysisArea" style="padding: 1rem;"><h2 style="margin-bottom: 1rem;">数据分析</h2><div id="charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;"></div></div>';
+            document.querySelector('.main').insertAdjacentHTML('beforeend', analysisHtml);
+
+            const gradeDist = EMBEDDED_DATA.stats.newGradeDistribution;
+            Plotly.newPlot('charts', [{
+                values: [gradeDist.TOP || 0, gradeDist.T1 || 0, gradeDist.T2 || 0, gradeDist.T3 || 0, gradeDist.T4 || 0, gradeDist.T5 || 0],
+                labels: ['TOP', 'T1', 'T2', 'T3', 'T4', '跳过'],
+                type: 'pie',
+                marker: { colors: ['#dc2626', '#f59e0b', '#10b981', '#64748b', '#94a3b8', '#bdc3c7'] }
+            }], { title: '评级分布', height: 350 });
+        }
+
+        init();
+    </script>
+</body>
+</html>
