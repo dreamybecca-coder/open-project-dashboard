@@ -1,0 +1,108 @@
+{
+  "total_candidates": 1469,
+  "passed_count": 0,
+  "rejected_count": 1465,
+  "passed": [],
+  "rejected_sample": [
+    {
+      "name": "陈芳强",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "李蕊",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "李囧囧",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "唐金耀",
+      "reason": "工作经验14年，排除",
+      "type": "age"
+    },
+    {
+      "name": "杨梦溪",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "唐铕泽",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "崔跃龙",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "曦雅",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "舒",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "王渭康",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "陈彦翔",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "何布林",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "金四化",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "徐聪",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "夏小平",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "骆超飞",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "康劲松",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "赵文博",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "曾",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    },
+    {
+      "name": "杨全林（星哥）",
+      "reason": "未找到有效年龄信息",
+      "type": "age"
+    }
+  ]
+}
