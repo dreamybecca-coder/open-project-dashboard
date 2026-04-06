@@ -31,7 +31,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft
 .card { background: #1e1e30; border: 1px solid #2d2d44; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; position: relative; }
 .card:hover { border-color: #4a9eff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(74,158,255,0.15); }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.card-name { font-size: 16px; font-weight: bold; color: #fff; }
+.card-name { font-size: 16px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
+.card-id { font-size: 10px; color: #888; font-weight: normal; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 8px; }
 .card-region { font-size: 11px; color: #888; margin-top: 2px; }
 .card-score-block { text-align: right; }
 .card-total { font-size: 28px; font-weight: bold; line-height: 1; }
@@ -307,21 +308,41 @@ function renderCards(tabName, list) {
     const intro = (p.introSummary||p.intro||'').substring(0,120);
     return '<div class="card" onclick="openModal(\''+p.id+'\',\''+tabName+'\')">'+
       '<div class="rank-badge">#'+(idx+1)+'</div>'+
-      '<div class="card-top"><div><div class="card-name">'+p.name+'</div><div class="card-region">'+(p.region||'')+' · '+regType+' · 学分'+p.credits+'</div></div>'+
+      '<div class="card-top"><div><div class="card-name">'+p.name+'<span class="card-id">#'+p.id+'</span></div><div class="card-region">'+(p.region||'')+' · '+regType+' · 学分'+p.credits+'</div></div>'+
       '<div class="card-score-block"><div class="card-total" style="color:'+gc+'">'+p.totalScore+'</div><div class="card-grade" style="background:'+gc+'22;color:'+gc+'">'+p.grade+'</div></div></div>'+
       '<div class="score-bars">'+
-        '<div class="bar-row"><span class="bar-label">人评 '+p.person_total+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(p.person_total/50*100)+'%;background:#FF7043"></div></div><span class="bar-val">/50</span></div>'+
-        '<div class="bar-row"><span class="bar-label">项评 '+p.project_total+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(p.project_total/50*100)+'%;background:#4a9eff"></div></div><span class="bar-val">/50</span></div>'+
+        '<div class="bar-row"><span class="bar-label">人评 '+(p.person_total||'-')+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round((p.person_total||0)/50*100)+'%;background:#FF7043"></div></div><span class="bar-val">/50</span></div>'+
+        '<div class="bar-row"><span class="bar-label">项评 '+(p.project_total||'-')+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round((p.project_total||0)/50*100)+'%;background:#4a9eff"></div></div><span class="bar-val">/50</span></div>'+
       '</div>'+
       (tagHtml?'<div class="card-tags">'+tagHtml+'</div>':'')+
       '<div class="card-intro">'+intro+'</div></div>';
   }).join('');
 }
 function openModal(id, tabName) {
-  const p = DATA[tabName].find(x => x.id===id);
+  // 根据tabName获取对应的名单用于查找
+  let nameList = null;
+  if (tabName === 'young32') nameList = YOUNG32_NAMES;
+  else if (tabName === 'overseas') nameList = OVERSEAS_NAMES;
+  else if (tabName === 'quka') nameList = QUKA_NAMES;
+  else if (tabName === 'chuhai') nameList = CHUHAI_NAMES;
+  else if (tabName === 'finance') nameList = FINANCE_NAMES;
+  else if (tabName === 'ip_automation') nameList = IP_AUTOMATION_NAMES;
+  
+  // 在DATA.all中查找，同时根据tabName过滤
+  const p = DATA.all.find(x => x.id===id && (!nameList || nameList.includes(x.name)));
   if(!p) return;
   const gc = GRADE_COLOR[p.grade]||'#888';
-  const rank = DATA[tabName].findIndex(x=>x.id===id)+1;
+  
+  // 计算排名 - 需要重新获取过滤后的列表
+  let filteredList = DATA.all;
+  if (tabName === 'young32') filteredList = DATA.all.filter(x => YOUNG32_NAMES.includes(x.name));
+  else if (tabName === 'overseas') filteredList = DATA.all.filter(x => OVERSEAS_NAMES.includes(x.name));
+  else if (tabName === 'quka') filteredList = DATA.all.filter(x => QUKA_NAMES.includes(x.name));
+  else if (tabName === 'chuhai') filteredList = DATA.all.filter(x => CHUHAI_NAMES.includes(x.name));
+  else if (tabName === 'finance') filteredList = DATA.all.filter(x => FINANCE_NAMES.includes(x.name));
+  else if (tabName === 'ip_automation') filteredList = DATA.all.filter(x => IP_AUTOMATION_NAMES.includes(x.name));
+  filteredList = filteredList.sort((a, b) => b.totalScore - a.totalScore);
+  const rank = filteredList.findIndex(x=>x.id===id)+1;
   const cats = p.specialCategories||[];
   const catColors = {'获客':'#81C784','出海':'#64B5F6','金融投资':'#FFD54F'};
   const catBgs = {'获客':'rgba(76,175,80,0.15)','出海':'rgba(33,150,243,0.15)','金融投资':'rgba(255,193,7,0.15)'};
